@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+  <title>タスク管理</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #coords {
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    #controls {
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 16px;
+      margin-right: 10px;
+      margin-top:10px;
+      font-size: 16px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    #matrix-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      aspect-ratio: 1 / 1;
+      border: 2px solid #333;
+      background-color: #f9f9f9;
+      user-select: none;
+      touch-action: none;
+    }
+
+    canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .task {
+      position: absolute;
+      width: 30%;
+      min-width: 90px;
+      max-width: 130px;
+      padding: 6px 10px;
+      color: white;
+      border-radius: 6px;
+      cursor: grab;
+      user-select: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 10;
+      font-size: 13px;
+      text-align: center;
+    }
+    .task.selected {
+      outline: 3px solid red;
+    }
+    #taskList {
+      margin-top: 20px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 600px;
+    }
+    .task-list-item {
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+      word-break: break-word;
+      cursor: pointer;
+      user-select: none;
+    }
+    .task-list-item.selected {
+      outline: 2px solid red;
+    }
+    #totalTime {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    @media (max-width: 480px) {
+      h1 {
+       font-size: 20px;
+      }
+
+      #controls {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      button {
+        width: 100%;
+        font-size: 16px;
+      }
+
+      .task {
+        width: 24%;
+        min-width: 70px;
+        max-width: 100px;
+        font-size: 11px;
+        padding: 4px 6px;
+      }
+    }
+
+
+  </style>
+</head>
+<body>
+
+<div id="controls">
+  <button id="addTaskBtn">タスク追加</button>
+  <button id="deleteTaskBtn" disabled>編集</button>
+  <button id="deselectTaskBtn" disabled>選択解除</button>
+  <button id="deleteTaskBtn" disabled>削除</button>
+</div>
+
+<div id="matrix-container">
+  <canvas id="axisCanvas" width="600" height="600"></canvas>
+</div>
+
+<div id="controls">
+  <button id="deleteTaskBtn" disabled>完了</button>
+</div>
+
+
+<div id="totalTime" style="font-weight:bold; margin-bottom:10px;">
+  全タスクの合計時間: 0時間
+</div>
+
+<div id="selectedTime" style="font-weight:bold; margin-bottom:10px;">
+  選択タスクの合計時間: 0時間
+</div>
+
+<div id="taskList"></div>
+
+<!--この辺に達成タスクリスト？-->
+
+<!-- モーダル -->
+<div id="taskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  background-color:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000;">
+  <div style="background:white; padding:20px; border-radius:8px; width:300px;">
+    <h3>タスク追加</h3>
+    <label>タスク名:<br><input type="text" id="modalTaskName" style="width:100%;"></label><br><br>
+    <label>作業時間（分）:<br><input type="number" id="modalTaskTime" style="width:100%;" min="1" value="1"></label><br><br>
+    <label>色を選択:<br><input type="color" id="modalTaskColor" value="#4a90e2"></label><br><br>
+    <div style="text-align:right;">
+      <button id="modalCancelBtn">キャンセル</button>
+      <button id="modalAddBtn">追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MATRIX_SIZE = Math.min(window.innerWidth, window.innerHeight, 600);
+const COORD_MIN = 0;
+const COORD_MAX = 100;
+const UNIT_PX = MATRIX_SIZE / COORD_MAX;
+
+const matrix = document.getElementById('matrix-container');
+const axisCanvas = document.getElementById('axisCanvas');
+const ctx = axisCanvas.getContext('2d');
+const addTaskBtn = document.getElementById('addTaskBtn');
+const deleteTaskBtn = document.getElementById('deleteTaskBtn');
+const deselectTaskBtn = document.getElementById('deselectTaskBtn');
+const taskList = document.getElementById('taskList');
+const totalTimeDisplay = document.getElementById('totalTime');
+
+const modal = document.getElementById('taskModal');
+const modalTaskName = document.getElementById('modalTaskName');
+const modalTaskTime = document.getElementById('modalTaskTime');
+const modalTaskColor = document.getElementById('modalTaskColor');
+const modalAddBtn = document.getElementById('modalAddBtn');
+const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+axisCanvas.width = MATRIX_SIZE;
+axisCanvas.height = MATRIX_SIZE;
+
+let selectedTasks = new Set();
+
+function drawAxes() {
+  ctx.clearRect(0, 0, MATRIX_SIZE, MATRIX_SIZE);
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, MATRIX_SIZE);
+  ctx.lineTo(MATRIX_SIZE, MATRIX_SIZE);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, MATRIX_SIZE);
+  ctx.stroke();
+  ctx.fillStyle = '#333';
+  ctx.font = '14px Arial';
+  ctx.fillText('重要度', MATRIX_SIZE - 55, MATRIX_SIZE - 25);
+  ctx.fillText('緊急度', 35, 20);
+
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 1;
+  ctx.font = '12px Arial';
+
+  for (let i = COORD_MIN; i <= COORD_MAX; i += 20) {
+    const x = i * UNIT_PX;
+    const y = MATRIX_SIZE - i * UNIT_PX;
+
+    ctx.beginPath();
+    ctx.moveTo(x, MATRIX_SIZE - 5);
+    ctx.lineTo(x, MATRIX_SIZE);
+    ctx.stroke();
+
+    if (i === 0) {
+      ctx.fillText('0', x + 6, MATRIX_SIZE - 8);
+    } else if (i === 100) {
+      ctx.fillText('100', x - 24, MATRIX_SIZE - 8);
+    } else {
+      ctx.fillText(i, x - 8, MATRIX_SIZE - 8);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(5, y);
+    ctx.stroke();
+
+    if (i !== 0) {
+      if (i === 100) {
+        ctx.fillText('100', 6, y + 16);
+      } else {
+        ctx.fillText(i, 6, y + 4);
+      }
+    }
+  }
+}
+
+function coordToPx(x, y) {
+  return {
+    left: x * UNIT_PX,
+    top: MATRIX_SIZE - y * UNIT_PX
+  };
+}
+
+function pxToCoord(pxX, pxY) {
+  const x = Math.round(pxX / UNIT_PX);
+  const y = Math.round((MATRIX_SIZE - pxY) / UNIT_PX);
+  return {
+    x: Math.max(COORD_MIN, Math.min(COORD_MAX, x)),
+    y: Math.max(COORD_MIN, Math.min(COORD_MAX, y))
+  };
+}
+
+//選択管理
+function selectTask(task) {
+  const taskName = task.dataset.name;
+
+  if (!selectedTasks.has(task)) {
+    task.classList.add('selected');
+    selectedTasks.add(task);
+  } else {
+    task.classList.remove('selected');
+    selectedTasks.delete(task);
+  }
+
+  // 対応する task-list-item にも選択クラスを同期
+  const listItems = document.querySelectorAll('.task-list-item');
+  listItems.forEach(item => {
+    if (item.dataset.name === taskName) {
+      if (selectedTasks.has(task)) {
+        item.classList.add('selected');
+      } else {
+        item.classList.remove('selected');
+      }
+    }
+  });
+
+  deleteTaskBtn.disabled = selectedTasks.size === 0;
+  deselectTaskBtn.disabled = selectedTasks.size === 0;
+
+  updateSelectedTime();
+}
+
+
+// 選択解除
+function clearSelection() {
+  selectedTasks.forEach(task => task.classList.remove('selected'));
+  selectedTasks.clear();
+
+  // task-list-item 側もすべて選択解除
+  const listItems = document.querySelectorAll('.task-list-item');
+  listItems.forEach(item => item.classList.remove('selected'));
+
+  deleteTaskBtn.disabled = true;
+  deselectTaskBtn.disabled = true;
+
+  updateSelectedTime();
+}
+
+
+function updateTaskCoord(task) {
+  const leftPx = parseFloat(task.style.left);
+  const topPx = parseFloat(task.style.top);
+  const rect = task.getBoundingClientRect();
+  const halfW = rect.width / 2;
+  const halfH = rect.height / 2;
+  const centerX = leftPx + halfW;
+  const centerY = topPx + halfH;
+  const coord = pxToCoord(centerX, centerY);
+  task.dataset.x = coord.x;
+  task.dataset.y = coord.y;
+  task.textContent = `${task.dataset.name}（${task.dataset.time}分）`;
+  updateTaskListOrder(); //タスク移動時に一覧を並び替える
+}
+
+function updateTaskListOrder() {
+  const tasks = Array.from(document.querySelectorAll('.task'));
+  tasks.sort((a, b) => {
+    const ay = parseInt(a.dataset.y), ax = parseInt(a.dataset.x);
+    const by = parseInt(b.dataset.y), bx = parseInt(b.dataset.x);
+    if (by !== ay) return by - ay; // Yの降順
+    return bx - ax; // Yが同じならXの降順
+  });
+
+  taskList.innerHTML = '';
+  tasks.forEach(task => {
+    const listItem = document.createElement('div');
+    listItem.className = 'task-list-item';
+    listItem.dataset.name = task.dataset.name;
+    listItem.textContent = `${task.dataset.name}（${task.dataset.time}分）`;
+    listItem.style.backgroundColor = task.style.backgroundColor;
+
+    if (selectedTasks.has(task)) {
+      listItem.classList.add('selected');
+    }
+
+    listItem.addEventListener('click', () => {
+      selectTask(task); // グラフ上の task を選択状態に
+    });
+
+    taskList.appendChild(listItem);
+  });
+}
+
+// 選択タスクの合計時間更新
+function updateSelectedTime() {
+  let total = 0;
+  selectedTasks.forEach(task => {
+    total += parseInt(task.dataset.time);
+  });
+  document.getElementById('selectedTime').textContent = `選択タスクの合計時間: ${total}分`;
+}
+
+// 全タスクの合計時間更新
+function updateTotalTime() {
+  const allTasks = document.querySelectorAll('.task');
+  let total = 0;
+  allTasks.forEach(task => {
+    total += parseInt(task.dataset.time);
+  });
+  document.getElementById('totalTime').textContent = `全タスクの合計時間: ${total}分`;
+}
+
+function makeDraggable(task) {
+  let offsetX, offsetY;
+  function onPointerDown(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const rect = task.getBoundingClientRect();
+    offsetX = e.clientX - (rect.left + rect.width / 2);
+    offsetY = e.clientY - (rect.top + rect.height / 2);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    task.style.cursor = 'grabbing';
+  }
+
+  function onPointerMove(e) {
+    const matrixRect = matrix.getBoundingClientRect();
+    let x = e.clientX - matrixRect.left - offsetX;
+    let y = e.clientY - matrixRect.top - offsetY;
+    const halfW = task.offsetWidth / 2;
+    const halfH = task.offsetHeight / 2;
+    let coord = pxToCoord(x, y);
+    coord.x = Math.round(coord.x / 5) * 5;
+    coord.y = Math.round(coord.y / 5) * 5;
+    const pos = coordToPx(coord.x, coord.y);
+    task.style.left = `${pos.left - halfW}px`;
+    task.style.top = `${pos.top - halfH}px`;
+    updateTaskCoord(task);
+  }
+
+  function onPointerUp() {
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    task.style.cursor = 'grab';
+  }
+
+  task.addEventListener('pointerdown', onPointerDown);
+}
+
+function createTask(name, time, color) {
+  const task = document.createElement('div');
+  task.className = 'task';
+  task.dataset.name = name;
+  task.dataset.time = time;
+  task.style.backgroundColor = color;
+
+  task.addEventListener('click', e => {
+    e.stopPropagation();
+    selectTask(task);
+  });
+
+  makeDraggable(task);
+  matrix.appendChild(task);
+  const px = coordToPx(50, 50);
+  task.style.left = `${px.left - 65}px`;
+  task.style.top = `${px.top - 20}px`;
+  updateTaskCoord(task);
+
+  updateTaskListOrder();
+  updateTotalTime(); // ← 全タスク合計時間も更新
+}
+
+addTaskBtn.addEventListener('click', () => {
+  modal.style.display = 'flex';
+  modalTaskName.value = '';
+  modalTaskTime.value = 1;
+});
+
+modalAddBtn.addEventListener('click', () => {
+  const name = modalTaskName.value.trim();
+  const time = parseInt(modalTaskTime.value);
+  const color = modalTaskColor.value;
+  if (!name || isNaN(time) || time <= 0) return;
+  createTask(name, time, color);
+  modal.style.display = 'none';
+});
+
+modalCancelBtn.addEventListener('click', () => {
+  modal.style.display = 'none';
+});
+
+deleteTaskBtn.addEventListener('click', () => {
+  selectedTasks.forEach(task => {
+    // 1. グラフ上から削除
+    matrix.removeChild(task);
+
+    // 2. 対応する一覧（task-list-item）も削除
+    const taskName = task.dataset.name;
+    const listItems = document.querySelectorAll('.task-list-item');
+    listItems.forEach(item => {
+      if (item.dataset.name === taskName) {
+        item.remove();
+      }
+    });
+  });
+
+  clearSelection();
+  updateTotalTime();
+});
+
+deselectTaskBtn.addEventListener('click', clearSelection);
+matrix.addEventListener('click', clearSelection);
+
+document.addEventListener("DOMContentLoaded", () => {
+  drawAxes();
+  modal.style.display = 'none';
+});
+
+
+const STORAGE_KEY = "eisenhower_tasks";
+
+// タスク一覧をlocalStorageに保存
+function saveTasksToLocalStorage() {
+  const allTasks = Array.from(document.querySelectorAll('.task')).map(task => ({
+    name: task.dataset.name,
+    time: parseInt(task.dataset.time),
+    color: task.style.backgroundColor,
+    x: parseInt(task.dataset.x),
+    y: parseInt(task.dataset.y)
+  }));
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allTasks));
+}
+
+// localStorageからタスク一覧を復元
+function loadTasksFromLocalStorage() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
+
+  try {
+    const tasks = JSON.parse(saved);
+    tasks.forEach(t => {
+      const task = document.createElement('div');
+      task.className = 'task';
+      task.dataset.name = t.name;
+      task.dataset.time = t.time;
+      task.dataset.x = t.x;
+      task.dataset.y = t.y;
+      task.style.backgroundColor = t.color;
+
+      task.addEventListener('click', e => {
+        e.stopPropagation();
+        selectTask(task);
+      });
+
+      makeDraggable(task);
+      matrix.appendChild(task);
+
+      const px = coordToPx(t.x, t.y);
+      const halfW = 65; // 幅の半分 (見た目に応じて調整)
+      const halfH = 20;
+      task.style.left = `${px.left - halfW}px`;
+      task.style.top = `${px.top - halfH}px`;
+
+      task.textContent = `${t.name}（${t.time}時間）`;
+    });
+
+    updateTaskListOrder();
+    updateTotalTime();
+  } catch (e) {
+    console.error("データの読み込みに失敗しました", e);
+  }
+}
+
+
+// すべてのタスク操作後に保存
+const observer = new MutationObserver(() => {
+  saveTasksToLocalStorage();
+});
+observer.observe(matrix, { childList: true, subtree: true });
+
+window.addEventListener("beforeunload", saveTasksToLocalStorage);
+window.addEventListener("DOMContentLoaded", () => {
+  loadTasksFromLocalStorage();
+});
+
+</script>
+</body>
+</html>
