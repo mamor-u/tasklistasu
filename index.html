@@ -399,7 +399,7 @@
             });
         }
 
-	    function drawAxes() {
+        function drawAxes() {
             ctx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
 
             // === 軸線描画 ===
@@ -414,42 +414,39 @@
             ctx.lineTo(MATRIX_SIZE / 2, MATRIX_SIZE);
             ctx.stroke();
 
-            // === 軸ラベル（中央） ===
-            ctx.font = "bold 20px sans-serif";
-            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            // === メインラベル（重要度・緊急度） ===
+            ctx.font = "bold 18px sans-serif";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
             ctx.textAlign = "center";
             ctx.textBaseline = "top";
 
             // 上部中央「緊急度」
-            ctx.fillText("緊急度", MATRIX_SIZE / 2, 10);
+            ctx.fillText("緊急度", MATRIX_SIZE / 2, 8);
 
             // 右側中央「重要度」（縦向き）
             ctx.save();
-            ctx.translate(MATRIX_SIZE - 15, MATRIX_SIZE / 2);
+            ctx.translate(MATRIX_SIZE - 12, MATRIX_SIZE / 2);
             ctx.rotate(Math.PI / 2);
             ctx.fillText("重要度", 0, 0);
             ctx.restore();
 
-            // === 補助ラベル ===
-            ctx.font = "bold 16px sans-serif";
-            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-            ctx.textAlign = "left";
-            ctx.textBaseline = "top";
+            // === 補助ラベル（高／低） ===
+            ctx.font = "bold 15px sans-serif";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
 
-            // 緊急度 高（上端左）
-            ctx.fillText("高", 10, 10);
+            // 緊急度 高（y軸左側上方）
+            ctx.fillText("高", MATRIX_SIZE / 2 - 25, 25);
 
-            // 緊急度 低（下端左）
-            ctx.textBaseline = "bottom";
-            ctx.fillText("低", 10, MATRIX_SIZE - 10);
+            // 緊急度 低（y軸左側下方）
+            ctx.fillText("低", MATRIX_SIZE / 2 - 25, MATRIX_SIZE - 25);
 
-            // 重要度 低（下端左側）
-            ctx.textAlign = "left";
-            ctx.fillText("低", 10, MATRIX_SIZE / 2 + 10);
+            // 重要度 低（x軸下方左）
+            ctx.fillText("低", 25, MATRIX_SIZE / 2 + 25);
 
-            // 重要度 高（下端右側）
-            ctx.textAlign = "right";
-            ctx.fillText("高", MATRIX_SIZE - 10, MATRIX_SIZE / 2 + 10);
+            // 重要度 高（x軸下方右）
+            ctx.fillText("高", MATRIX_SIZE - 25, MATRIX_SIZE / 2 + 25);
         }
 
         // --- ドラッグで移動（キャンバス上） ---
