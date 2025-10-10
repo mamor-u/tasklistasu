@@ -154,6 +154,31 @@
         const COORD_MAX = 100;
         const UNIT_PX = MATRIX_SIZE / COORD_MAX;
 
+	  function coordToPx(x, y) {
+      	return { left: x * UNIT_PX, top: MATRIX_SIZE - y * UNIT_PX };
+  	  }
+  	  function pxToCoord(pxX, pxY) {
+      	const x = Math.round(pxX / UNIT_PX);
+      	const y = Math.round((MATRIX_SIZE - pxY) / UNIT_PX);
+      	return { x: Math.max(COORD_MIN, Math.min(COORD_MAX, x)), y: Math.max(COORD_MIN, Math.min(COORD_MAX, y)) };
+  	  }
+  	  function generateId() {
+      	return 't_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  	  }
+  	  function todayStr() {
+      	const d = new Date();
+      	const y = d.getFullYear();
+      	const m = String(d.getMonth() + 1).padStart(2, '0');
+      	const day = String(d.getDate()).padStart(2, '0');
+      	return `${y}-${m}-${day}`;
+  	  }
+  	  function daysBetween(d1Str, d2Str) {
+      	const d1 = new Date(d1Str + 'T00:00:00');
+      	const d2 = new Date(d2Str + 'T00:00:00');
+      	const ms = d2 - d1;
+      	return Math.floor(ms / (1000 * 60 * 60 * 24));
+  	  }
+
         const matrix = document.getElementById('matrix-container');
         const axisCanvas = document.getElementById('axisCanvas');
         const ctx = axisCanvas.getContext('2d');
@@ -196,12 +221,12 @@
         }
 
         /* ▼ ラベル表示変更 */
-        function labelText(task) {
-            let t = `${task.dataset.name}（${formatTime(task.dataset.time)}）`;
-            if (task.dataset.deadline) t += `\n期限:${task.dataset.deadline}`;
-            return t;
-        }
-
+	  function labelText(task) {
+    		const minutes = parseInt(task.dataset.time, 10) || 0;
+    		let t = `${task.dataset.name}（${formatTime(minutes)}）`;
+    		if (task.dataset.deadline) t += `\n期限:${task.dataset.deadline}`;
+    		return t;
+	  }
         /* ▼ 時間合計系の表示修正 */
         function updateSelectedTime() {
             let total = 0;
