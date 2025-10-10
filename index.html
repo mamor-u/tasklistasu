@@ -134,7 +134,7 @@
         <div style="background:white; padding:20px; border-radius:8px; width:300px;">
             <h3 id="modalTitle">タスク追加</h3>
             <label>タスク名:<br><input type="text" id="modalTaskName" style="width:100%;"></label><br><br>
-            <label>作業時間（分）:<br><input type="number" id="modalTaskTime" style="width:100%;" min="1" value="1"></label><br><br>
+            <label>作業時間:<br><div style="display:flex; gap:6px; align-items:center;"><input type="number" id="modalTaskHours" min="0" value="0" style="width:60px;"> 時間<input type="number" id="modalTaskMinutes" min="0" max="59" value="0" style="width:60px;"> 分</div></label><br><br>
             <label>期限:<br><input type="date" id="modalTaskDeadline" style="width:100%;"></label><br><br>
             <label>色を選択:<br><input type="color" id="modalTaskColor" value="#4a90e2"></label><br><br>
             <div style="text-align:right;">
@@ -167,7 +167,8 @@
         const modal = document.getElementById('taskModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalTaskName = document.getElementById('modalTaskName');
-        const modalTaskTime = document.getElementById('modalTaskTime');
+        const modalTaskHours = document.getElementById('modalTaskHours');
+        const modalTaskMinutes = document.getElementById('modalTaskMinutes');
         const modalTaskDeadline = document.getElementById('modalTaskDeadline');
         const modalTaskColor = document.getElementById('modalTaskColor');
         const modalAddBtn = document.getElementById('modalAddBtn');
@@ -305,7 +306,315 @@
             updateSelectedTime();
         }
 
-        /* ▼ 以降は既存処理そのまま（省略） */
+        // --- 表示更新 ---
+        function updateTaskCoord(task) {
+            const leftPx = parseFloat(task.style.left);
+            const topPx = parseFloat(task.style.top);
+            const rect = task.getBoundingClientRect();
+            const halfW = rect.width / 2;
+            const halfH = rect.height / 2;
+            const centerX = leftPx + halfW;
+            const centerY = topPx + halfH;
+            const coord = pxToCoord(centerX, centerY);
+            task.dataset.x = coord.x;
+            task.dataset.y = coord.y;
+            task.textContent = labelText(task);
+            updateTaskListOrder();
+        }
+
+        function updateTaskListOrder(orderIds = null) {
+            let tasks = Array.from(document.querySelectorAll('.task'));
+            if (!orderIds) {
+                // おすすめ（初期）優先順位: y降順 -> x降順
+                tasks.sort((a, b) => {
+                    const ay = parseInt(a.dataset.y), ax = parseInt(a.dataset.x);
+                    const by = parseInt(b.dataset.y), bx = parseInt(b.dataset.x);
+                    if (by !== ay) return by - ay;
+                    return bx - ax;
+                });
+            } else {
+                // 指定順並び
+                const idx = new Map(orderIds.map((id, i) => [id, i]));
+                tasks.sort((a, b) => (idx.get(a.dataset.id) ?? 9999) - (idx.get(b.dataset.id) ?? 9999));
+            }
+
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const listItem = document.createElement('div');
+                listItem.className = 'task-list-item';
+                listItem.dataset.id = task.dataset.id;
+                listItem.textContent = `${task.dataset.name}（${task.dataset.time}分）` + (task.dataset.deadline ? ` 期限:${task.dataset.deadline}` : '');
+                listItem.style.backgroundColor = task.style.backgroundColor;
+                if (selectedTasks.has(task)) listItem.classList.add('selected');
+
+                // 並べ替え: Drag & Drop
+                listItem.draggable = true;
+                listItem.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', task.dataset.id);
+                });
+                listItem.addEventListener('dragover', e => e.preventDefault());
+                listItem.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    const items = Array.from(taskList.children).map(ch => ch.dataset.id);
+                    const from = items.indexOf(draggedId);
+                    const to = items.indexOf(listItem.dataset.id);
+                    if (from === -1 || to === -1) return;
+                    items.splice(to, 0, items.splice(from, 1)[0]);
+                    updateTaskListOrder(items);
+                    saveOrderToLocalStorage(items);
+                });
+
+                listItem.addEventListener('click', () => selectTask(task));
+
+                taskList.appendChild(listItem);
+            });
+        }
+
+        function updateSelectedTime() {
+            let total = 0;
+            selectedTasks.forEach(task => { total += parseInt(task.dataset.time); });
+            document.getElementById('selectedTime').textContent = `選択タスクの合計時間: ${total}分`;
+        }
+
+        function updateTotalTime() {
+            let total = 0;
+            document.querySelectorAll('.task').forEach(task => { total += parseInt(task.dataset.time); });
+            document.getElementById('totalTime').textContent = `全タスクの合計時間: ${total}分`;
+        }
+
+        // --- ドラッグで移動（キャンバス上） ---
+        function makeDraggable(task) {
+            let offsetX, offsetY;
+            function onPointerDown(e) {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                const rect = task.getBoundingClientRect();
+                offsetX = e.clientX - (rect.left + rect.width / 2);
+                offsetY = e.clientY - (rect.top + rect.height / 2);
+                document.addEventListener('pointermove', onPointerMove);
+                document.addEventListener('pointerup', onPointerUp);
+                task.style.cursor = 'grabbing';
+            }
+            function onPointerMove(e) {
+                const matrixRect = matrix.getBoundingClientRect();
+                let x = e.clientX - matrixRect.left - offsetX;
+                let y = e.clientY - matrixRect.top - offsetY;
+                const halfW = task.offsetWidth / 2;
+                const halfH = task.offsetHeight / 2;
+                let coord = pxToCoord(x, y);
+                coord.x = Math.round(coord.x / 5) * 5;
+                coord.y = Math.round(coord.y / 5) * 5;
+                const pos = coordToPx(coord.x, coord.y);
+                task.style.left = `${pos.left - halfW}px`;
+                task.style.top = `${pos.top - halfH}px`;
+                updateTaskCoord(task);
+                saveTasksToLocalStorage();
+            }
+            function onPointerUp() {
+                document.removeEventListener('pointermove', onPointerMove);
+                document.removeEventListener('pointerup', onPointerUp);
+                task.style.cursor = 'grab';
+            }
+            task.addEventListener('pointerdown', onPointerDown);
+        }
+
+        // --- タスク作成 ---
+        function createTask(name, time, color, deadline, x = 50, y = 50, id = null) {
+            const task = document.createElement('div');
+            task.className = 'task';
+            task.dataset.id = id || generateId();
+            task.dataset.name = name;
+            task.dataset.time = time;
+            task.dataset.deadline = deadline || '';
+            task.style.backgroundColor = color;
+
+            task.addEventListener('click', e => { e.stopPropagation(); selectTask(task); });
+            makeDraggable(task);
+            matrix.appendChild(task);
+            const px = coordToPx(x, y);
+            task.style.left = `${px.left - 65}px`;
+            task.style.top = `${px.top - 20}px`;
+            updateTaskCoord(task);
+            updateTaskListOrder(getOrderFromLocalStorage());
+            updateTotalTime();
+            saveTasksToLocalStorage();
+        }
+
+        // --- モーダル操作 ---
+        addTaskBtn.addEventListener('click', () => {
+            editTarget = null;
+            modalTitle.textContent = 'タスク追加';
+            modalAddBtn.textContent = '追加';
+            modal.style.display = 'flex';
+            modalTaskName.value = '';
+            modalTaskTime.value = 1;
+            modalTaskDeadline.value = '';
+            modalTaskColor.value = '#4a90e2';
+        });
+
+        editTaskBtn.addEventListener('click', () => {
+            if (selectedTasks.size !== 1) return;
+            editTarget = [...selectedTasks][0];
+            modalTitle.textContent = 'タスク編集';
+            modalAddBtn.textContent = '更新';
+            modalTaskName.value = editTarget.dataset.name;
+            modalTaskTime.value = editTarget.dataset.time;
+            modalTaskDeadline.value = editTarget.dataset.deadline;
+            modalTaskColor.value = rgbToHex(editTarget.style.backgroundColor) || '#4a90e2';
+            modal.style.display = 'flex';
+        });
+
+        modalAddBtn.addEventListener('click', () => {
+            const name = modalTaskName.value.trim();
+            const hours = parseInt(document.getElementById('modalTaskHours').value) || 0;
+            const minutes = parseInt(document.getElementById('modalTaskMinutes').value) || 0;
+            const time = hours * 60 + minutes;
+            const deadline = modalTaskDeadline.value;
+            const color = modalTaskColor.value;
+            if (!name || isNaN(time) || time <= 0) return;
+
+            if (editTarget) {
+                editTarget.dataset.name = name;
+                editTarget.dataset.time = time;
+                editTarget.dataset.deadline = deadline || '';
+                editTarget.style.backgroundColor = color;
+                editTarget.textContent = labelText(editTarget);
+                updateTaskListOrder(getOrderFromLocalStorage());
+                updateTotalTime();
+                saveTasksToLocalStorage();
+            } else {
+                createTask(name, time, color, deadline);
+            }
+            modal.style.display = 'none';
+        });
+
+        modalCancelBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+
+        // --- 削除/選択解除 ---
+        deleteTaskBtn.addEventListener('click', () => {
+            const idsToRemove = [];
+            selectedTasks.forEach(task => {
+                idsToRemove.push(task.dataset.id);
+                matrix.removeChild(task);
+            });
+            clearSelection();
+            updateTaskListOrder(getOrderFromLocalStorage()?.filter(id => !idsToRemove.includes(id)) || null);
+            updateTotalTime();
+            const order = getOrderFromLocalStorage();
+            if (order) saveOrderToLocalStorage(order.filter(id => !idsToRemove.includes(id)));
+            saveTasksToLocalStorage();
+        });
+
+        deselectTaskBtn.addEventListener('click', clearSelection);
+        matrix.addEventListener('click', clearSelection);
+
+        // --- おすすめ優先順位 ---
+        recommendBtn.addEventListener('click', () => {
+            localStorage.removeItem(ORDER_KEY);
+            updateTaskListOrder();
+        });
+
+        // --- LocalStorage ---
+        function saveTasksToLocalStorage() {
+            const allTasks = Array.from(document.querySelectorAll('.task')).map(task => ({
+                id: task.dataset.id,
+                name: task.dataset.name,
+                time: parseInt(task.dataset.time),
+                color: task.style.backgroundColor,
+                x: parseInt(task.dataset.x),
+                y: parseInt(task.dataset.y),
+                deadline: task.dataset.deadline || ''
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(allTasks));
+        }
+
+        function getOrderFromLocalStorage() {
+            const raw = localStorage.getItem(ORDER_KEY);
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch { return null; }
+        }
+
+        function saveOrderToLocalStorage(orderIds) {
+            localStorage.setItem(ORDER_KEY, JSON.stringify(orderIds));
+        }
+
+        function loadTasksFromLocalStorage() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+            try {
+                const arr = JSON.parse(saved);
+                if (!Array.isArray(arr)) return;
+                arr.forEach(t => {
+                    const id = t.id || generateId();
+                    createTask(t.name, parseInt(t.time), t.color, t.deadline, parseInt(t.x), parseInt(t.y), id);
+                });
+                const order = getOrderFromLocalStorage();
+                if (order) updateTaskListOrder(order);
+                updateTotalTime();
+            } catch (e) {
+                console.error('データの読み込みに失敗しました', e);
+            }
+        }
+
+        // --- 日付変化で y を +2 シフト ---
+        function applyDailyShiftIfNeeded() {
+            const today = todayStr();
+            const last = localStorage.getItem(SHIFT_KEY);
+            if (!last) {
+                localStorage.setItem(SHIFT_KEY, today);
+                return;
+            }
+            const diff = daysBetween(last, today);
+            if (diff <= 0) return;
+            const inc = 2 * diff;
+            document.querySelectorAll('.task').forEach(task => {
+                const x = parseInt(task.dataset.x);
+                let y = parseInt(task.dataset.y);
+                y = Math.min(COORD_MAX, y + inc);
+                task.dataset.y = y;
+                const px = coordToPx(x, y);
+                const rect = task.getBoundingClientRect();
+                const halfW = rect.width / 2;
+                const halfH = rect.height / 2;
+                task.style.left = `${px.left - halfW}px`;
+                task.style.top = `${px.top - halfH}px`;
+                task.textContent = labelText(task);
+            });
+            updateTaskListOrder(getOrderFromLocalStorage());
+            saveTasksToLocalStorage();
+            localStorage.setItem(SHIFT_KEY, today);
+        }
+
+        let currentDateString = todayStr();
+        setInterval(() => {
+            const nowStr = todayStr();
+            if (nowStr !== currentDateString) {
+                currentDateString = nowStr;
+                applyDailyShiftIfNeeded();
+            }
+        }, 60 * 1000);
+
+        // --- rgb -> hex 変換（正規表現なし） ---
+        function rgbToHex(rgb) {
+            if (!rgb) return null;
+            if (rgb[0] === '#') return rgb;
+            const nums = [];
+            let buf = '';
+            for (let i = 0; i < rgb.length; i++) {
+                const c = rgb[i];
+                if (c >= '0' && c <= '9') buf += c;
+                else {
+                    if (buf.length) { nums.push(parseInt(buf, 10)); buf = ''; }
+                }
+            }
+            if (buf.length) { nums.push(parseInt(buf, 10)); }
+            if (nums.length < 3) return null;
+            const [r, g, b] = nums;
+            const toHex = n => n.toString(16).padStart(2, '0');
+            return '#' + toHex(r) + toHex(g) + toHex(b);
+        }
+
 
         /* --- 最後に初期化 --- */
         document.addEventListener('DOMContentLoaded', () => {
@@ -318,3 +627,4 @@
     </script>
 </body>
 </html>
+
