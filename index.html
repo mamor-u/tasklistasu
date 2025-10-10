@@ -219,7 +219,7 @@
                 id: task.dataset.id,
                 name: task.dataset.name,
                 time: parseInt(task.dataset.time),
-                color: task.style.backgroundColor,
+                color: rgbToHex(task.style.backgroundColor),
                 deadline: task.dataset.deadline,
                 completedAt: new Date().toLocaleString()
             });
@@ -343,7 +343,7 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'task-list-item';
                 listItem.dataset.id = task.dataset.id;
-                listItem.textContent = `${task.dataset.name}（${task.dataset.time}分）` + (task.dataset.deadline ? ` 期限:${task.dataset.deadline}` : '');
+                listItem.textContent = `${task.dataset.name}（${formatTime(parseInt(task.dataset.time))}）` + (task.dataset.deadline ? ` 期限:${task.dataset.deadline}` : '');
                 listItem.style.backgroundColor = task.style.backgroundColor;
                 if (selectedTasks.has(task)) listItem.classList.add('selected');
 
@@ -372,6 +372,18 @@
         }
 
 
+
+	  function drawAxes() {
+    		ctx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
+    		ctx.strokeStyle = "#333";
+    		ctx.lineWidth = 2;
+    		ctx.beginPath();
+    		ctx.moveTo(0, MATRIX_SIZE / 2);
+    		ctx.lineTo(MATRIX_SIZE, MATRIX_SIZE / 2);
+    		ctx.moveTo(MATRIX_SIZE / 2, 0);
+    		ctx.lineTo(MATRIX_SIZE / 2, MATRIX_SIZE);
+    		ctx.stroke();
+	  }
 
         // --- ドラッグで移動（キャンバス上） ---
         function makeDraggable(task) {
@@ -623,4 +635,3 @@
     </script>
 </body>
 </html>
-
