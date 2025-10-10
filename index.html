@@ -130,11 +130,14 @@
     <div id="completedTaskList"></div>
 
     <!-- 既存モーダル -->
-    <div id="taskModal"style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
+    <div id="taskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
         <div style="background:white; padding:20px; border-radius:8px; width:300px;">
             <h3 id="modalTitle">タスク追加</h3>
             <label>タスク名:<br><input type="text" id="modalTaskName" style="width:100%;"></label><br><br>
-            <label>作業時間:<br><div style="display:flex; gap:6px; align-items:center;"><input type="number" id="modalTaskHours" min="0" value="0" style="width:60px;"> 時間<input type="number" id="modalTaskMinutes" min="0" max="59" value="0" style="width:60px;"> 分</div></label><br><br>
+		<label>作業時間:<br>
+    			<input type="number" id="modalTaskHours" min="0" value="0" style="width:45px;"> 時間
+    			<input type="number" id="modalTaskMinutes" min="0" max="59" value="0" style="width:45px;"> 分
+		</label>
             <label>期限:<br><input type="date" id="modalTaskDeadline" style="width:100%;"></label><br><br>
             <label>色を選択:<br><input type="color" id="modalTaskColor" value="#4a90e2"></label><br><br>
             <div style="text-align:right;">
