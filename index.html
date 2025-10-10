@@ -371,17 +371,7 @@
             });
         }
 
-        function updateSelectedTime() {
-            let total = 0;
-            selectedTasks.forEach(task => { total += parseInt(task.dataset.time); });
-            document.getElementById('selectedTime').textContent = `選択タスクの合計時間: ${total}分`;
-        }
 
-        function updateTotalTime() {
-            let total = 0;
-            document.querySelectorAll('.task').forEach(task => { total += parseInt(task.dataset.time); });
-            document.getElementById('totalTime').textContent = `全タスクの合計時間: ${total}分`;
-        }
 
         // --- ドラッグで移動（キャンバス上） ---
         function makeDraggable(task) {
@@ -633,3 +623,4 @@
     </script>
 </body>
 </html>
+
