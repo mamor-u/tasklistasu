@@ -421,14 +421,10 @@
             ctx.textBaseline = "top";
 
             // 上部中央「緊急度」
-            ctx.fillText("緊急度", MATRIX_SIZE / 2, 8);
+            ctx.fillText("緊急度", MATRIX_SIZE / 2 + 45, 20);
 
             // 右側中央「重要度」（縦向き）
-            ctx.save();
-            ctx.translate(MATRIX_SIZE - 12, MATRIX_SIZE / 2);
-            ctx.rotate(Math.PI / 2);
-            ctx.fillText("重要度", 0, 0);
-            ctx.restore();
+			ctx.fillText("重要度", MATRIX_SIZE / 2, MATRIX_SIZE / 2 - 35);
 
             // === 補助ラベル（高／低） ===
             ctx.font = "bold 15px sans-serif";
@@ -699,3 +695,4 @@
     </script>
 </body>
 </html>
+
