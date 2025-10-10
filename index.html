@@ -399,19 +399,58 @@
             });
         }
 
+	    function drawAxes() {
+            ctx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
 
+            // === 軸線描画 ===
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // 横軸（重要度）
+            ctx.moveTo(0, MATRIX_SIZE / 2);
+            ctx.lineTo(MATRIX_SIZE, MATRIX_SIZE / 2);
+            // 縦軸（緊急度）
+            ctx.moveTo(MATRIX_SIZE / 2, 0);
+            ctx.lineTo(MATRIX_SIZE / 2, MATRIX_SIZE);
+            ctx.stroke();
 
-	  function drawAxes() {
-    		ctx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
-    		ctx.strokeStyle = "#333";
-    		ctx.lineWidth = 2;
-    		ctx.beginPath();
-    		ctx.moveTo(0, MATRIX_SIZE / 2);
-    		ctx.lineTo(MATRIX_SIZE, MATRIX_SIZE / 2);
-    		ctx.moveTo(MATRIX_SIZE / 2, 0);
-    		ctx.lineTo(MATRIX_SIZE / 2, MATRIX_SIZE);
-    		ctx.stroke();
-	  }
+            // === 軸ラベル（中央） ===
+            ctx.font = "bold 20px sans-serif";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+
+            // 上部中央「緊急度」
+            ctx.fillText("緊急度", MATRIX_SIZE / 2, 10);
+
+            // 右側中央「重要度」（縦向き）
+            ctx.save();
+            ctx.translate(MATRIX_SIZE - 15, MATRIX_SIZE / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText("重要度", 0, 0);
+            ctx.restore();
+
+            // === 補助ラベル ===
+            ctx.font = "bold 16px sans-serif";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+
+            // 緊急度 高（上端左）
+            ctx.fillText("高", 10, 10);
+
+            // 緊急度 低（下端左）
+            ctx.textBaseline = "bottom";
+            ctx.fillText("低", 10, MATRIX_SIZE - 10);
+
+            // 重要度 低（下端左側）
+            ctx.textAlign = "left";
+            ctx.fillText("低", 10, MATRIX_SIZE / 2 + 10);
+
+            // 重要度 高（下端右側）
+            ctx.textAlign = "right";
+            ctx.fillText("高", MATRIX_SIZE - 10, MATRIX_SIZE / 2 + 10);
+        }
 
         // --- ドラッグで移動（キャンバス上） ---
         function makeDraggable(task) {
