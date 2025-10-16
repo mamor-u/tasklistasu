@@ -114,15 +114,16 @@
         <button id="editTaskBtn" disabled>編集</button>
         <button id="deselectTaskBtn" disabled>選択解除</button>
         <button id="deleteTaskBtn" disabled>削除</button>
-
-        <!-- ▼ 新規追加ボタン -->
-        <button id="completeTaskBtn" disabled>タスク完了</button>
-        <button id="toggleCompletedBtn">完了タスク一覧</button>
-
-        <button id="recommendBtn">おすすめ優先順位</button>
     </div>
 
     <div id="matrix-container"><canvas id="axisCanvas" width="600" height="600"></canvas></div>
+
+    <div id="controls">
+        <button id="completeTaskBtn" disabled>タスク完了</button>
+        <button id="toggleCompletedBtn">完了タスク一覧</button>
+        <button id="recommendBtn">おすすめ優先順位</button>
+    </div>
+
     <div id="totalTime">全タスクの合計時間: 0時間0分</div>
     <div id="selectedTime">選択タスクの合計時間: 0時間0分</div>
 
@@ -695,6 +696,7 @@
     </script>
 </body>
 </html>
+
 
 
 
