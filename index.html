@@ -5,132 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>タスク管理</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
+/* === レイアウト最適化（PC横並び・スマホ縦並び） === */
 
-        #controls {
-            margin-bottom: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+/* 全体固定表示 */
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* ページ全体スクロール禁止 */
+}
 
-        button {
-            padding: 10px 16px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:disabled {
-            opacity: 0.5;
-            cursor: default;
-        }
+/* メイン全体構造をFlex化 */
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100vh;
+  box-sizing: border-box;
+}
 
-        #matrix-container {
-            position: relative;
-            width: 100%;
-            max-width: 600px;
-            aspect-ratio: 1/1;
-            border: 2px solid #333;
-            background: #f9f9f9;
-        }
+/* 操作ボタンエリア */
+#controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
 
-        canvas {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
+/* === メインコンテンツ全体 === */
+#main-container {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  justify-content: center;
+  align-items: stretch;
+  overflow: hidden;
+}
 
-        .task {
-            position: absolute;
-            width: 30%;
-            min-width: 90px;
-            max-width: 130px;
-            padding: 6px 10px;
-            color: white;
-            border-radius: 6px;
-            cursor: grab;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            z-index: 10;
-            font-size: 13px;
-            text-align: center;
-        }
-        .task.selected {
-            outline: 3px solid red;
-        }
+/* === 左：キャンバス === */
+#matrix-container {
+  flex: 1;
+  max-width: 600px;
+  aspect-ratio: 1/1;
+  border: 2px solid #333;
+  background: #f9f9f9;
+  margin: 0 10px;
+}
 
-        #taskList {
-            margin-top: 20px;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-width: 600px;
-        }
+/* === 右：リスト部分 === */
+#list-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  max-width: 450px;
+  overflow: hidden;
+}
 
-        .task-list-item {
-            padding: 6px 10px;
-            border-radius: 6px;
-            color: white;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: grab;
-            user-select: none;
-        }
-        .task-list-item.selected {
-            outline: 2px solid red;
-        }
+/* リストタイトルや時間表示 */
+#totalTime, #selectedTime {
+  font-weight: bold;
+  margin: 5px 0;
+}
 
-        #totalTime {
-            font-weight: bold;
-            margin-top: 10px;
-        }
+/* タスク一覧と完了タスク一覧をスクロール可能に */
+#taskList, #completedTaskList {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 6px;
+}
 
-        /* ▼ 追加：完了タスク一覧エリア用 */
-        #completedTaskList {
-            display: none;
-            margin-top: 20px;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-            max-width: 600px;
-        }
-        .completed-item {
-            background-color: #666;
-            color: #fff;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 13px;
-        }
+/* スクロールバー控えめ */
+#taskList::-webkit-scrollbar, #completedTaskList::-webkit-scrollbar {
+  width: 6px;
+}
+#taskList::-webkit-scrollbar-thumb, #completedTaskList::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 3px;
+}
+
+/* === スマホ対応（縦並び） === */
+@media (max-width: 768px) {
+  #main-container {
+    flex-direction: column;
+    align-items: center;
+    height: calc(100vh - 120px); /* ボタン分の高さを除外 */
+  }
+
+  #matrix-container {
+    width: 95%;
+    height: 50%;
+    max-width: none;
+    aspect-ratio: auto;
+  }
+
+  #list-container {
+    width: 95%;
+    height: 50%;
+    max-width: none;
+    overflow: hidden;
+  }
+
+  #taskList, #completedTaskList {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+}
     </style>
 </head>
 <body>
-    <div id="controls">
-        <button id="addTaskBtn">タスク追加</button>
-        <button id="editTaskBtn" disabled>編集</button>
-        <button id="deselectTaskBtn" disabled>選択解除</button>
-        <button id="deleteTaskBtn" disabled>削除</button>
+    <div id="main-container">
+        <div id="controls">
+            <button id="addTaskBtn">タスク追加</button>
+            <button id="editTaskBtn" disabled>編集</button>
+            <button id="deselectTaskBtn" disabled>選択解除</button>
+            <button id="deleteTaskBtn" disabled>削除</button>
+        </div>
+
+        <div id="matrix-container"><canvas id="axisCanvas" width="600" height="600"></canvas></div>
+        <br>
+        <div id="controls">
+            <button id="completeTaskBtn" disabled>タスク完了</button>
+            <button id="toggleCompletedBtn">完了タスク一覧</button>
+            <button id="recommendBtn">おすすめ優先順位</button>
+        </div>
+
+
+        <div id="totalTime">全タスクの合計時間: 0時間0分</div>
+        <div id="selectedTime">選択タスクの合計時間: 0時間0分</div>
+
+        <div id="list-container">
+            <div id="taskList"></div>
+            <div id="completedTaskList"></div>
+        </div>
     </div>
 
-    <div id="matrix-container"><canvas id="axisCanvas" width="600" height="600"></canvas></div>
-	<br>
-    <div id="controls">
-        <button id="completeTaskBtn" disabled>タスク完了</button>
-        <button id="toggleCompletedBtn">完了タスク一覧</button>
-        <button id="recommendBtn">おすすめ優先順位</button>
-    </div>
-
-    <div id="totalTime">全タスクの合計時間: 0時間0分</div>
-    <div id="selectedTime">選択タスクの合計時間: 0時間0分</div>
-
-    <div id="taskList"></div>
-    <div id="completedTaskList"></div>
-
-    <!-- 既存モーダル -->
+    <!-- タスク追加モーダル -->
     <div id="taskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
         <div style="background:white; padding:20px; border-radius:8px; width:300px;">
             <h3 id="modalTitle">タスク追加</h3>
@@ -149,7 +167,6 @@
     </div>
 
     <script>
-        /* ここから元のコード開始 */
         const MATRIX_SIZE = Math.min(window.innerWidth, window.innerHeight, 600);
         const COORD_MIN = 0;
         const COORD_MAX = 100;
@@ -300,7 +317,7 @@
             }
         });
 
-        /* ▼ 選択時のUI制御に完了ボタンも追加 */
+        /* ▼ 選択時のUI制御 */
         function selectTask(task) {
             const id = task.dataset.id;
             if (!selectedTasks.has(task)) {
@@ -319,11 +336,11 @@
             deleteTaskBtn.disabled = selectedTasks.size === 0;
             deselectTaskBtn.disabled = selectedTasks.size === 0;
             editTaskBtn.disabled = selectedTasks.size !== 1;
-            completeTaskBtn.disabled = selectedTasks.size === 0; // ←追加
+            completeTaskBtn.disabled = selectedTasks.size === 0;
             updateSelectedTime();
         }
 
-        /* ▼ clearSelection修正 */
+        /* ▼ clearSelection */
         function clearSelection() {
             selectedTasks.forEach(task => task.classList.remove('selected'));
             selectedTasks.clear();
@@ -331,7 +348,7 @@
             deleteTaskBtn.disabled = true;
             deselectTaskBtn.disabled = true;
             editTaskBtn.disabled = true;
-            completeTaskBtn.disabled = true; // ←追加
+            completeTaskBtn.disabled = true;
             updateSelectedTime();
         }
 
@@ -404,7 +421,7 @@
             ctx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
 
             // === 軸線描画 ===
-            ctx.strokeStyle = "rgba(51, 51, 51, 0.5)";
+            ctx.strokeStyle = "rgba(51, 51, 51, 0.7)";
             ctx.lineWidth = 2;
             ctx.beginPath();
             // 横軸（重要度）
@@ -421,11 +438,11 @@
             ctx.textAlign = "center";
             ctx.textBaseline = "top";
 
-            // 上部「緊急度」
+            // 上部中央「緊急度」
             ctx.fillText("緊急度", MATRIX_SIZE / 2 + 45, 20);
 
-            // 右側「重要度」
-			ctx.fillText("重要度", MATRIX_SIZE - 60, MATRIX_SIZE / 2 - 35);
+            // 右側中央「重要度」
+            ctx.fillText("重要度", MATRIX_SIZE - 60, MATRIX_SIZE / 2 - 35);
 
             // === 補助ラベル（高／低） ===
             ctx.font = "bold 15px sans-serif";
@@ -696,8 +713,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
