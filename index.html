@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
  <head>
@@ -14,7 +15,7 @@
       height: 100%;
       margin: 0;
       -webkit-tap-highlight-color: transparent;
-      /* body の縦スクロールは許可（リストがスクロールする） */
+      /* body の縦スクロールは許可 */
     }
     body {
       font-family: Arial, sans-serif;
@@ -28,7 +29,6 @@
       color: #111;
     }
 
-    /* コントロール（上と下に分ける） */
     .controls {
       display: flex;
       flex-wrap: wrap;
@@ -116,7 +116,7 @@
       font-weight: bold;
     }
 
-    /* タスク一覧はスクロール可能（スマホでも縦スクロール） */
+    /* タスク一覧 */
     #taskList, #completedTaskList {
       flex: 1;
       min-height: 120px;
@@ -141,7 +141,7 @@
 
     .completed-item { background: #666; color: #fff; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; }
 
-    /* スクロールバー（控えめ） */
+    /* スクロールバー */
     #taskList::-webkit-scrollbar, #completedTaskList::-webkit-scrollbar { width: 7px; }
     #taskList::-webkit-scrollbar-thumb, #completedTaskList::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
 
@@ -178,16 +178,19 @@
         <div id="list">
           <div id="totalTime">全タスクの合計時間: 0時間0分</div>
           <div id="selectedTime">選択タスクの合計時間: 0時間0分</div>
-         
-          <div class="controls" id="controls-bottom">
-           <button id="completeTaskBtn" disabled>完了</button>
-           <button id="toggleCompletedBtn">完了タスクを見る</button>
-           <button id="recommendBtn">おすすめ優先順位</button>
-          </div>
+
+            <!-- 下部コントロール -->
+            <div class="controls" id="controls-bottom">
+                <button id="completeTaskBtn" disabled>完了</button>
+                <button id="toggleCompletedBtn">完了タスクを見る</button>
+                <button id="recommendBtn">おすすめ優先順位</button>
+            </div>
+
           <div id="taskList" aria-live="polite"></div>
           <div id="completedTaskList" style="display:none;"></div>
         </div>
       </div>
+    
     
       <!-- タスク追加モーダル -->
       <div id="taskModal" role="dialog" aria-modal="true">
@@ -207,7 +210,7 @@
         </div>
       </div>
       <script>
-        /* ======== 定数と初期要素参照 ======== */
+        /* ======== 定数と初期要素 ======== */
         const matrix = document.getElementById('matrix-container');
         const axisCanvas = document.getElementById('axisCanvas');
         const ctx = axisCanvas.getContext('2d');
@@ -239,14 +242,14 @@
     
         let selectedTasks = new Set();
         let editTarget = null;
-        let isDragging = false;        // ドラッグ中フラグ（スクロール防止用）
+        let isDragging = false;        // ドラッグ中（スクロール防止）
         let draggingTask = null;
-        let MATRIX_SIZE = 600;         // 実際のキャンバスピクセルサイズ（動的に設定）
+        let MATRIX_SIZE = 600;
         const COORD_MIN = 0;
         const COORD_MAX = 100;
         let UNIT_PX = 1;
     
-        /* ====== ユーティリティ ====== */
+        /* ====== 時間、分単位の制御 ====== */
         function generateId() { return 't_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
         function todayStr() {
           const d = new Date();
@@ -314,7 +317,6 @@
         }
     
         function coordToPx(x, y) {
-          // x,y in 0-100 -> pixel coords within MATRIX_SIZE
           const left = x * UNIT_PX;
           const top = MATRIX_SIZE - y * UNIT_PX;
           return { left, top };
@@ -328,7 +330,6 @@
         /* ====== 軸描画 ====== */
         function drawAxes() {
           ctx.clearRect(0,0, axisCanvas.width, axisCanvas.height);
-          // use CSS pixels because ctx is scaled for devicePixelRatio
           ctx.strokeStyle = "rgba(51,51,51,0.6)";
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -523,7 +524,7 @@
           const coord = pxToCoord(centerX, centerY);
           task.dataset.x = coord.x;
           task.dataset.y = coord.y;
-          // テキストはHTML要素の innerText（多行は改行）
+          //innerText（多行は改行）
           task.textContent = labelText(task);
           updateTaskListOrder();
         }
@@ -545,7 +546,7 @@
     
           // 位置セット
           const px = coordToPx(x, y);
-          // 一時的に追加して幅を確保した後で中央配置
+          
           requestAnimationFrame(() => {
             const halfW = task.offsetWidth / 2;
             const halfH = task.offsetHeight / 2;
@@ -618,7 +619,7 @@
           document.addEventListener('pointercancel', onPointerUp);
         }
     
-        /* ====== スワイプ時のページスクロール制御（重要） ======
+        /* ====== スワイプ時のページスクロール制御 ======
            - ドラッグ中（isDragging）に限り、document の touchmove を preventDefault してページスクロールを止める
            - ただし、taskList や完了リストの上でのスクロールは許可する
            - axisCanvas / .task 上のタッチはドラッグ目的なのでページスクロールを防ぐ
@@ -783,13 +784,8 @@
           renderCompletedTasks();
         });
     
-        /* ====== 便利関数/補助 ====== */
         function getOrderFromLocalStorage() { return (localStorage.getItem(ORDER_KEY) ? JSON.parse(localStorage.getItem(ORDER_KEY)) : null); }
-    
-        // もし将来 canvas クリックで新規座標を作る等が必要ならここに
-        axisCanvas.addEventListener('click', (e) => {
-          // クリックで座標を確認するデバッグ用（現在は無効）
-        });
+
       </script>
     </body>
 </html>
