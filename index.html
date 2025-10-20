@@ -284,7 +284,8 @@
 
             MATRIX_SIZE = Math.round(size);
 
-            // ▼ここでCSS側heightを固定
+            // ▼ここでCSS側height,widthを固定
+            matrix.style.width = MATRIX_SIZE + 'px';
             matrix.style.height = MATRIX_SIZE + 'px';
 
             // ▼キャンバスも正方形
@@ -791,6 +792,7 @@
       </script>
     </body>
 </html>
+
 
 
 
