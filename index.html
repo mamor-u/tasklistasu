@@ -274,32 +274,34 @@
     
         /* ====== レスポンシブ：キャンバスリサイズと単位再計算 ====== */
         function setCanvasSize() {
-          // matrix の実際の幅を基準に正方サイズを決定（最大値を制限）
-          const rect = matrix.getBoundingClientRect();
-          const size = Math.min(rect.width, parseFloat(getComputedStyle(matrix).maxWidth) || 600);
-          MATRIX_SIZE = Math.round(size);
-          axisCanvas.style.width = MATRIX_SIZE + 'px';
-          axisCanvas.style.height = MATRIX_SIZE + 'px';
-          // devicePixelRatio を活用してシャープにする
-          const dpr = window.devicePixelRatio || 1;
-          axisCanvas.width = MATRIX_SIZE * dpr;
-          axisCanvas.height = MATRIX_SIZE * dpr;
-          ctx.setTransform(dpr,0,0,dpr,0,0); // スケーリングをリセットしてdpr反映
-          UNIT_PX = MATRIX_SIZE / COORD_MAX;
-          drawAxes();
-          // 既存タスクを再配置（dataset の x,y は 0-100）
-          document.querySelectorAll('.task').forEach(task => {
-            const x = parseFloat(task.dataset.x) || 50;
-            const y = parseFloat(task.dataset.y) || 50;
-            const px = coordToPx(x, y);
-            // 中央基準で配置：オフセットは要素の幅高さに基づく
-            const rectTask = task.getBoundingClientRect();
-            // task may not yet be laid out: compute center using current width
-            const halfW = Math.max(1, task.offsetWidth) / 2;
-            const halfH = Math.max(1, task.offsetHeight) / 2;
-            task.style.left = (px.left - halfW) + 'px';
-            task.style.top = (px.top - halfH) + 'px';
-          });
+            const rect = matrix.getBoundingClientRect();
+            const maxSize = parseFloat(getComputedStyle(matrix).maxWidth) || 600;
+            const containerWidth = rect.width;
+            const size = Math.max(280, Math.min(containerWidth, maxSize));
+            MATRIX_SIZE = Math.round(size);
+
+            matrix.style.height = MATRIX_SIZE + 'px';
+
+            axisCanvas.style.width = MATRIX_SIZE + 'px';
+            axisCanvas.style.height = MATRIX_SIZE + 'px';
+
+            const dpr = window.devicePixelRatio || 1;
+            axisCanvas.width = MATRIX_SIZE * dpr;
+            axisCanvas.height = MATRIX_SIZE * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            UNIT_PX = MATRIX_SIZE / COORD_MAX;
+            drawAxes();
+
+            document.querySelectorAll('.task').forEach(task => {
+                const x = parseFloat(task.dataset.x) || 50;
+                const y = parseFloat(task.dataset.y) || 50;
+                const px = coordToPx(x, y);
+                const halfW = Math.max(1, task.offsetWidth) / 2;
+                const halfH = Math.max(1, task.offsetHeight) / 2;
+                task.style.left = (px.left - halfW) + 'px';
+                task.style.top = (px.top - halfH) + 'px';
+            });
         }
     
         function coordToPx(x, y) {
