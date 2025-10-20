@@ -61,13 +61,14 @@
     #matrix-container {
       position: relative;
       width: 100%;
+      max-width: 600px;
       aspect-ratio: 1 / 1;  /* 正方形維持 */
-      box-sizing: border-box; /* ← これで枠線を含めてaspect-ratioを維持 */
       border: 2px solid #333;
       background: #f9f9f9;
       display: flex;
       justify-content: center;
       align-items: center;
+      min-width: 260px;
       overflow: visible; /* タスクがはみ出すことを許可 */
     }
     /* Canvas は容器いっぱいに */
@@ -285,7 +286,8 @@
             MATRIX_SIZE = Math.round(size);
 
             // ▼ここでCSS側heightを固定
-            matrix.style.height = (MATRIX_SIZE - 4) + 'px'; // 枠2px×上下分を引く
+            matrix.style.height = MATRIX_SIZE + 'px';
+
             // ▼キャンバスも正方形
             axisCanvas.style.width = MATRIX_SIZE + 'px';
             axisCanvas.style.height = MATRIX_SIZE + 'px';
@@ -790,6 +792,3 @@
       </script>
     </body>
 </html>
-
-
-
