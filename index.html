@@ -60,11 +60,14 @@
     /* キャンバス領域（比率に合わせて可変） */
     #matrix-container {
       position: relative;
-      flex: 1 1 600px;
-      max-width: var(--max-matrix);
-      aspect-ratio: 1/1;
+      width: 100%;
+      max-width: 600px;
+      aspect-ratio: 1 / 1;  /* 正方形維持 */
       border: 2px solid #333;
       background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       min-width: 260px;
       overflow: visible; /* タスクがはみ出すことを許可 */
     }
@@ -274,14 +277,18 @@
     
         /* ====== レスポンシブ：キャンバスリサイズと単位再計算 ====== */
         function setCanvasSize() {
+            // 修正版: 正方形を保証し、スマホでも高さが暴れないようにする
             const rect = matrix.getBoundingClientRect();
             const maxSize = parseFloat(getComputedStyle(matrix).maxWidth) || 600;
             const containerWidth = rect.width;
             const size = Math.max(280, Math.min(containerWidth, maxSize));
+
             MATRIX_SIZE = Math.round(size);
 
+            // ▼ここでCSS側heightを固定
             matrix.style.height = MATRIX_SIZE + 'px';
 
+            // ▼キャンバスも正方形
             axisCanvas.style.width = MATRIX_SIZE + 'px';
             axisCanvas.style.height = MATRIX_SIZE + 'px';
 
@@ -293,6 +300,7 @@
             UNIT_PX = MATRIX_SIZE / COORD_MAX;
             drawAxes();
 
+            // --- 既存タスク再配置 ---
             document.querySelectorAll('.task').forEach(task => {
                 const x = parseFloat(task.dataset.x) || 50;
                 const y = parseFloat(task.dataset.y) || 50;
@@ -784,3 +792,4 @@
       </script>
     </body>
 </html>
+
