@@ -290,8 +290,8 @@
             matrix.style.height = MATRIX_SIZE + 'px';
 
             // ▼キャンバスも正方形
-            axisCanvas.style.width = MATRIX_SIZE + 'px';
-            axisCanvas.style.height = MATRIX_SIZE + 'px';
+            axisCanvas.style.width = (MATRIX_SIZE - 4) + 'px'; // 枠線 2px×左右分を引く
+            axisCanvas.style.height = (MATRIX_SIZE - 4) + 'px'; // 枠線 2px×上下分を引く
 
             const dpr = window.devicePixelRatio || 1;
             axisCanvas.width = MATRIX_SIZE * dpr;
@@ -793,6 +793,7 @@
       </script>
     </body>
 </html>
+
 
 
 
