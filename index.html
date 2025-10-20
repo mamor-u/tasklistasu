@@ -286,8 +286,8 @@
             MATRIX_SIZE = Math.round(size);
 
             // ▼ここでCSS側height,widthを固定
-            matrix.style.width = MATRIX_SIZE + 'px';
-            matrix.style.height = MATRIX_SIZE + 'px';
+            matrix.style.width = (MATRIX_SIZE - 4) + 'px'; // 枠線 2px×左右分を引く
+            matrix.style.height = (MATRIX_SIZE - 4) + 'px'; // 枠線 2px×上下分を引く
 
             // ▼キャンバスも正方形
             axisCanvas.style.width = MATRIX_SIZE + 'px';
@@ -793,6 +793,7 @@
       </script>
     </body>
 </html>
+
 
 
 
