@@ -579,8 +579,8 @@
     
             // 中心をつかむ
             const rect = task.getBoundingClientRect();
-            offsetX = e.clientX - (rect.left + rect.width / 2);
-            offsetY = e.clientY - (rect.top + rect.height / 2);
+            offsetX = task.offsetWidth / 2;
+            offsetY = task.offsetWidth / 2;
             task.style.cursor = 'grabbing';
             requestAnimationFrame(() => onPointerMove(e));
           }
@@ -800,6 +800,7 @@
       </script>
     </body>
 </html>
+
 
 
 
