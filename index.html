@@ -146,15 +146,14 @@
 
     /* 補助: モーダル中央 */
     #taskModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:2000; }
-    #taskModal .box { background:white; padding:20px; border-radius:8px; width:320px; max-width:95%; max-height: 90vh; overflow-y: auto;}
+    #taskModal .box { background:white; padding:20px; border-radius:8px; width:320px; max-width:95%; }
 
     /* ===== スマホ用（縦並び） ===== */
     @media (max-width: 768px) {
       #main { flex-direction: column; align-items: center; }
-      #matrix-container { width: 95%; max-width: 95%; aspect-ratio: 1/1; border-width: 1.5px;}
+      #matrix-container { width: 95%; max-width: 95%; aspect-ratio: 1/1; }
       #list { width: 95%; max-width: 95%; }
       .controls { gap: 6px; }
-      .task { font-size: clamp(11px, 3vw, 13px); }
       button { font-size: 14px; padding: 8px 10px; }
     }
   </style>
@@ -293,8 +292,8 @@
             matrix.style.height = MATRIX_SIZE + 'px';
 
             // ▼キャンバスも正方形
-            axisCanvas.style.width = (MATRIX_SIZE - 2) + 'px';
-            axisCanvas.style.height = (MATRIX_SIZE - 2) + 'px';
+            axisCanvas.style.width = (MATRIX_SIZE - 4) + 'px'; // 枠線 2px×左右分を引く
+            axisCanvas.style.height = (MATRIX_SIZE - 4) + 'px'; // 枠線 2px×上下分を引く
 
             const dpr = window.devicePixelRatio || 1;
             axisCanvas.width = MATRIX_SIZE * dpr;
@@ -302,11 +301,10 @@
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
             UNIT_PX = MATRIX_SIZE / COORD_MAX;
-            requestAnimationFrame(() => {
-              drawAxes();
+            drawAxes();
 
-              // --- 既存タスク再配置 ---
-              document.querySelectorAll('.task').forEach(task => {
+            // --- 既存タスク再配置 ---
+            document.querySelectorAll('.task').forEach(task => {
                 const x = parseFloat(task.dataset.x) || 50;
                 const y = parseFloat(task.dataset.y) || 50;
                 const px = coordToPx(x, y);
@@ -314,9 +312,8 @@
                 const halfH = Math.max(1, task.offsetHeight) / 2;
                 task.style.left = (px.left - halfW) + 'px';
                 task.style.top = (px.top - halfH) + 'px';
-              });
-            });  
-          }
+            });
+        }
     
         function coordToPx(x, y) {
           const left = x * UNIT_PX;
@@ -574,12 +571,11 @@
             isDragging = true;
             task.setPointerCapture(pointerId);
     
-            // 中心をつかむ
+            // 要素中心からの差分を計算
             const rect = task.getBoundingClientRect();
-            offsetX = task.offsetWidth / 2;;
-            offsetY = task.offsetWidth / 2;;
+            offsetX = e.clientX - (rect.left + rect.width/2);
+            offsetY = e.clientY - (rect.top + rect.height/2);
             task.style.cursor = 'grabbing';
-            requestAnimationFrame(() => onPointerMove(e));
           }
     
           function onPointerMove(e) {
