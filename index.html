@@ -567,22 +567,34 @@
           let dragStartX = 0, dragStartY = 0;//開始位置を記録
     
           function onPointerDown(e) {
-            // マウスの左クリック、またはタッチ/ペンで始める
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
-            e.preventDefault();
-            pointerId = e.pointerId;
-            draggingTask = task;
+            if (e.button !== 0) return;
             isDragging = true;
+            draggingTask = task;
+
+            const rect = matrix.getBoundingClientRect();
             dragStartX = e.clientX;
             dragStartY = e.clientY;
-            task.setPointerCapture(pointerId);
-    
-            // 中心をつかむ
-            const rect = task.getBoundingClientRect();
+
             offsetX = task.offsetWidth / 2;
-            offsetY = task.offsetWidth / 2;
-            task.style.cursor = 'grabbing';
-            requestAnimationFrame(() => onPointerMove(e));
+            offsetY = task.offsetHeight / 2;
+
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+          }
+
+          function onPointerUp(e) {
+            if (!isDragging || draggingTask !== task) return;
+            isDragging = false;
+
+            const moved = Math.abs(e.clientX - dragStartX) + Math.abs(e.clientY - dragStartY);
+            if (moved < 5) {
+              // ← 移動距離が小さい場合、クリック扱いで選択切り替え
+              selectTask(task);
+            }
+
+            saveTasksToLocalStorage();
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
           }
     
           function onPointerMove(e) {
@@ -800,6 +812,7 @@
       </script>
     </body>
 </html>
+
 
 
 
